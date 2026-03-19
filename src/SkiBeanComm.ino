@@ -19,7 +19,6 @@
 
 #include <Arduino.h>
 #include <PID_v1.h>
-#include "../lib/SkiPinDefns.h"
 #include "../lib/SerialDebug.h"
 #include "../lib/SkiBLE.h"
 #include "../lib/SkiLED.h"
