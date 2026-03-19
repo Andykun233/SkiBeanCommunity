@@ -43,33 +43,14 @@ jobs:
       - name: Build firmware
         run: pio run
 
-      - name: Install esptool
-        run: pip install esptool
-
-      - name: Create merged firmware binaries
+      - name: Collect merged firmware
         run: |
           mkdir -p release
-
           for env in .pio/build/*/; do
             name=$(basename "$env")
-
-            MCU=$(pio run -e "$name" -t envdump | grep 'BOARD_MCU' | cut -d"'" -f4)
-            PLATFORMIO_CORE_DIR=$(pio system info --json-output | jq -r '.core_dir.value')
-            PLATFORMIO_PACKAGES_DIR="${PLATFORMIO_CORE_DIR}/packages/framework-arduinoespressif32/tools/partitions"
-
-            echo "Environment: $name"
-            echo "Detected MCU: $MCU"
-            echo "Packages dir: $PLATFORMIO_PACKAGES_DIR"
-
-            esptool --chip $MCU merge-bin \
-              -o "release/${name}.bin" \
-              --flash-mode dio \
-              --flash-freq 80m \
-              --flash-size 4MB \
-              0x0000  "$env/bootloader.bin" \
-              0x8000  "$env/partitions.bin" \
-              0xe000  "${PLATFORMIO_PACKAGES_DIR}/boot_app0.bin" \
-              0x10000 "$env/firmware.bin"
+            if [ -f "$env/firmware_merged.bin" ]; then
+              cp "$env/firmware_merged.bin" "release/${name}.bin"
+            fi
           done
 
       - name: Generate checksums
