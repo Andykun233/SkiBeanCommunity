@@ -1,6 +1,6 @@
 # HiBean ESP32 BLE Roaster Control for Skywalker v1
 
-For Chinses README https://github.com/Andykun233/SkiBeanCommunity/blob/main/readmech.md 
+For [Chinese README](https://github.com/Andykun233/SkiBeanCommunity/blob/main/readmech.md)
 
 This code implements the Community Edition (Skywalker Comm) roaster controller for ESP32 series boards, and has been tested with Waveshare ESP32-S3-Zero and Espressif ESP32C6-devkitC, both connected to a Skywalker v1 roaster.  This is NOT for v2 Skywalker.
 
