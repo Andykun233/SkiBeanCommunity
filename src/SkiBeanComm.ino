@@ -19,16 +19,41 @@
 
 #include <Arduino.h>
 #include <PID_v1.h>
+#include "../lib/SerialDebug.h"
 #include "../lib/SkiBLE.h"
 #include "../lib/SkiLED.h"
 #include "../lib/SkiCMD.h"
 #include "../lib/SkiPIDConfig.h"
-#include "../lib/SkiParser.h"
+#include "../lib/SkiMAX6675.h"
+
+#ifndef MAX6675_SCK_PIN
+#define MAX6675_SCK_PIN 4
+#endif
+
+#ifndef MAX6675_CS_PIN
+#define MAX6675_CS_PIN 5
+#endif
+
+#ifndef MAX6675_SO_PIN
+#define MAX6675_SO_PIN 6
+#endif
+
+#ifndef MAX6675_2_SCK_PIN
+#define MAX6675_2_SCK_PIN MAX6675_SCK_PIN
+#endif
+
+#ifndef MAX6675_2_CS_PIN
+#define MAX6675_2_CS_PIN 10
+#endif
+
+#ifndef MAX6675_2_SO_PIN
+#define MAX6675_2_SO_PIN MAX6675_SO_PIN
+#endif
 
 // -----------------------------------------------------------------------------
 // Current Sketch and Release Version (for BLE device info)
 // -----------------------------------------------------------------------------
-#define FW_VERSION "v1.2.4"
+#define FW_VERSION "Andy Fork Version 1.0.0"
 String firmWareVersion = String(FW_VERSION);
 String sketchName = String(__FILE__).substring(String(__FILE__).lastIndexOf('/')+1);
 
@@ -36,12 +61,16 @@ String sketchName = String(__FILE__).substring(String(__FILE__).lastIndexOf('/')
 // Global Bean Temperature Variable
 // -----------------------------------------------------------------------------
 double temp          = 0.0; // temperature
+double temp2         = 0.0; // second temperature
 char CorF = 'C';            // default units
 
 // -----------------------------------------------------------------------------
-// Instantiate Parser for read messages from roaster
+// MAX6675 thermocouple reader for bean temperature
 // -----------------------------------------------------------------------------
-SkyRoasterParser roaster;
+SkiMAX6675 thermocouple1(MAX6675_SCK_PIN, MAX6675_CS_PIN, MAX6675_SO_PIN);
+SkiMAX6675 thermocouple2(MAX6675_2_SCK_PIN, MAX6675_2_CS_PIN, MAX6675_2_SO_PIN);
+unsigned long lastTempReadMs = 0;
+const unsigned long TEMP_READ_INTERVAL_MS = 500;
 
 // -----------------------------------------------------------------------------
 // Track BLE writes from HiBean
@@ -60,17 +89,24 @@ PID myPID(&pInput, &pOutput, &pSetpoint,
         myPIDConfig.getKp(), myPIDConfig.getKi(), myPIDConfig.getKd(),
         myPIDConfig.getPMode(), DIRECT);  //pid instance with our default values
 
+double convertTemperature(double celsius) {
+    return (CorF == 'F') ? (1.8 * celsius + 32.0) : celsius;
+}
+
 void setup() {
     Serial.begin(115200);
-    ESP_LOGI("setup", "Starting HiBean ESP32 BLE Roaster Control.");
+    D_println("Starting HiBean ESP32 BLE Roaster Control.");
     delay(3000); //let fw upload finish before we take over hwcdc serial tx/rx
+
+    D_println("Serial SERIAL_DEBUG ON!");
 
     // set pinmode on tx for commands to roaster, take it high
     pinMode(TX_PIN, OUTPUT);
     digitalWrite(TX_PIN, HIGH);
 
-    // start parser on rx pin for bean temp readings from roaster
-    roaster.begin(RX_PIN);
+    // Start thermocouple readers for bean temperatures
+    thermocouple1.begin();
+    thermocouple2.begin();
 
     // Start BLE
     initBLE();
@@ -93,15 +129,22 @@ void loop() {
     // roaster shut down, clear our buffers   
     if (itsbeentoolong()) { shutdown(); }
 
-    // roaster message found, go get it, validate and update temp
-    if(roaster.msgAvailable()) {
-        uint8_t msg[7];
-        roaster.getMessage(msg);
+    // Read bean temperatures from MAX6675 thermocouples.
+    if ((millis() - lastTempReadMs) >= TEMP_READ_INTERVAL_MS) {
+        lastTempReadMs = millis();
 
-        if(roaster.validate(msg)) {
-            temp = roaster.getTemperature(msg);
+        double celsius1 = 0.0;
+        if (thermocouple1.readCelsius(celsius1)) {
+            temp = convertTemperature(celsius1);
         } else {
-            ESP_LOGI("loop", "Checksum failed!");
+            D_println("MAX6675 thermocouple 1 read failed.");
+        }
+
+        double celsius2 = 0.0;
+        if (thermocouple2.readCelsius(celsius2)) {
+            temp2 = convertTemperature(celsius2);
+        } else {
+            D_println("MAX6675 thermocouple 2 read failed.");
         }
     }
 

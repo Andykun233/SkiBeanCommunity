@@ -18,6 +18,24 @@ To set up your development environment, install VSCode and the pioarduino extens
 
 Within pioarduino, "Open" an existing project and select the 'platform.ini' file included in this repo, and the rest of the development enviornment and required libs and toolchains will automatically be installed and configured - you're ready to build and flash.
 
+## ESP32-C3 Super Mini Wiring Notes
+The `esp32-c3-super-mini` PlatformIO environment is configured for two MAX6675 thermocouple boards. The two MAX6675 modules share SCK and SO, and each module uses its own CS pin.
+
+| Signal | ESP32-C3 Super Mini GPIO | Notes |
+|--------|---------------------------|-------|
+| MAX6675 #1 SCK | GPIO4 | Shared clock. |
+| MAX6675 #1 SO  | GPIO6 | Shared data output from the MAX6675 modules. |
+| MAX6675 #1 CS  | GPIO5 | First thermocouple chip select. |
+| MAX6675 #2 SCK | GPIO4 | Shared clock. |
+| MAX6675 #2 SO  | GPIO6 | Shared data output from the MAX6675 modules. |
+| MAX6675 #2 CS  | GPIO10 | Second thermocouple chip select. |
+
+These values can be changed in `platformio.ini` with `MAX6675_SO_PIN`, `MAX6675_2_SO_PIN`, and `MAX6675_2_CS_PIN`. The firmware default for the first CS pin is GPIO5 and the shared SCK pin is GPIO4.
+
+GPIO19 is not used for MAX6675 SO on the ESP32-C3 Super Mini. On many ESP32-C3 Super Mini boards, GPIO18/GPIO19 are USB D-/D+ rather than normal header pins.
+
+The roaster control output still uses `TX_PIN` from `platformio.ini`. If your ESP32-C3 Super Mini board does not expose GPIO18, change `TX_PIN` to a GPIO that is actually available on your board before wiring it to the roaster control line.
+
 ## **Control Commands & Behavior**
 HiBean and this roaster control software loosely implement [TC4 commands](https://github.com/greencardigan/TC4-shield/blob/master/applications/Artisan/aArtisan/trunk/src/aArtisan/commands.txt) for the majority of roaster functions, and are enumerated below.
 
@@ -47,7 +65,7 @@ HiBean and this roaster control software loosely implement [TC4 commands](https:
 | `PID;CT;XXXX`    | Temporarily sets PID cycle (sample) time to XXXX ms (not persisted). |
 | `PID;PM;E`      | Temporarily change pMode: E = P_ON_E to M = P_ON_M(default), or reverse (not persisted). |
 | `OT1;XX`        | Manually sets heater power to **XX%** when PID is off; sets the MAX heat power level when PID is on. |
-| `READ`          | Retrieves current temperature, set temperature, heater, and vent power. |
+| `READ`          | Retrieves status as `0,temp1,temp2,heater,vent`, where `temp1` and `temp2` are the two MAX6675 readings. |
 
 ## **Usage Example**
 - Enable PID control:

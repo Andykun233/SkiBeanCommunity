@@ -58,11 +58,11 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
     // https://docs.silabs.com/bluetooth/4.0/bluetooth-miscellaneous-mobile/selecting-suitaNimBLE-connection-parameters-for-apple-devices
     pServer->updateConnParams(connInfo.getConnHandle(), 12, 24, 4, 500);
    
-    ESP_LOGI("SkiBLE", "Client connected.");
+    D_println("BLE: Client connected.");
   }
   void onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) override {
     deviceConnected = false;
-    ESP_LOGI("SkiBLE", "Client disconnected. Restarting advertising...");
+    D_println("BLE: Client disconnected. Restarting advertising...");
     pServer->getAdvertising()->start();
   }
 };
@@ -77,7 +77,7 @@ class RoasterCallbacks : public NimBLECharacteristicCallbacks {
 
     if (rxValue.length() > 0) {
       String input = String(rxValue.c_str());
-      ESP_LOGV("SkiBLE", "Write Received: %s", input);
+      D_print("BLE Write Received: ");  D_println(input);
       messageQueue.push(rxValue);    }
   }
 };
@@ -102,7 +102,7 @@ class PIDTuneCallback : public NimBLECharacteristicCallbacks {
     myPIDConfig.apply(myPID);
   }
   void onRead(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override {
-      ESP_LOGI("SkiBLE", "PIDTuneRead Received.");
+      D_println("PIDTuneRead Received.");
       pCharacteristic->setValue(String(myPIDConfig.getKp()) + ',' + String(myPIDConfig.getKi()) + ',' + String(myPIDConfig.getKd()));
   }
 };
@@ -119,7 +119,7 @@ class PIDModeCallback : public NimBLECharacteristicCallbacks {
     myPIDConfig.apply(myPID);
   }
   void onRead(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override {
-      ESP_LOGI("SkiBLE", "PMode Received.");
+      D_println("PMode Received.");
       if (myPIDConfig.getPMode() == P_ON_E) {
         pCharacteristic->setValue("P_ON_E");
       } else {
@@ -135,7 +135,7 @@ class PIDSampleTimeCallback : public NimBLECharacteristicCallbacks {
     myPIDConfig.apply(myPID);
   }
   void onRead(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override {
-      ESP_LOGI("SkiBLE", "SampleTime Received.");
+      D_println("SampleTime Received.");
       pCharacteristic->setValue(String(myPIDConfig.getSampleTime()));
   }
 };
@@ -147,27 +147,27 @@ class PIDMaxPowerCallback : public NimBLECharacteristicCallbacks {
     myPIDConfig.apply(myPID);
   }
   void onRead(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override {
-      ESP_LOGI("SkiBLE", "MaxPower Received.");
+      D_println("MaxPower Received.");
       pCharacteristic->setValue(String(myPIDConfig.getMaxPower()));
   }
 };
 
 // HiBean notify response to write()
 void notifyNimBLEClient(const String& message) {
-    ESP_LOGV("SkiBLE", "Attempting to notify NimBLE client with: %s", message.c_str());
+    D_println("Attempting to notify NimBLE client with: " + message);
     delay(30); //Give up time so hibean sees delta between write and notify timestamps
 
     if (deviceConnected && pTxCharacteristic) {
         pTxCharacteristic->setValue(message.c_str());
         pTxCharacteristic->notify();
-       ESP_LOGV("SkiBLE", "Notification sent successfully.");
+       D_println("Notification sent successfully.");
     } else {
-      ESP_LOGW("SkiBLE", "Notification failed. Device not connected or TX characteristic unavailable.");
+      D_println("Notification failed. Device not connected or TX characteristic unavailable.");
     }
 }
 
 void extern initBLE() {
-    std::string NimBLEDeviceName = "ESP32_Skycommand_BLE";
+    std::string NimBLEDeviceName = "RoastC3";
     NimBLEDevice::init(NimBLEDeviceName);
 
     pServer = NimBLEDevice::createServer();
@@ -222,6 +222,8 @@ void extern initBLE() {
     pidMaxPowerDescriptor->setValue("PID Max Power: 0-100 (%)");
     pidMaxPowerCharacteristic->addDescriptor(pidMaxPowerDescriptor);
 
+    pService->start();
+
     // esp32 information to HiBean for support/debug purposes
     NimBLEService* devInfoService = pServer->createService("180A");
     NimBLECharacteristic* boardCharacteristic = devInfoService->createCharacteristic("2A29", NIMBLE_PROPERTY::READ);
@@ -230,10 +232,12 @@ void extern initBLE() {
       sketchNameCharacteristic->setValue(sketchName);
     NimBLECharacteristic* firmwareCharacteristic = devInfoService->createCharacteristic("2A26", NIMBLE_PROPERTY::READ);
       firmwareCharacteristic->setValue(sketchName + " " + firmWareVersion);
+    
+    devInfoService->start();
 
     NimBLEAdvertising* pAdvertising = pServer->getAdvertising();
     pAdvertising->setName(NimBLEDeviceName);
     pAdvertising->start();
     
-	  ESP_LOGI("SkiBLE", "BLE Advertising started...");
+	  D_println("BLE Advertising started...");
 }
