@@ -6,6 +6,18 @@ The [HiBean](https://www.hibean.fun/en/) roasting team generously provides suppo
 
 Hat-tip to jmoore52, mrnoone5313 and Nirecue and their great work at [Skywalker Roaster Labs](https://github.com/jmoore52/SkywalkerRoaster).  It is their work that inspried this version.  If you want to get involved, join the [HiBean discord server](https://discord.gg/pEM8MkY9).
 
+## Photos
+
+![Photo 1](pic/1.jpeg)
+
+![Photo 2](pic/2.PNG)
+
+![Photo 3](pic/3.PNG)
+
+![Photo 4](pic/4.PNG)
+
+![Photo 5](pic/5.PNG)
+
 ## Available binaries (.bin)
 With every milestone featureset that's felt to be release-worthy, a release is generated and pre-compiled binaries are automatically generated for the supported esp32 platforms.
 

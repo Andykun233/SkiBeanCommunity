@@ -6,6 +6,18 @@
 
 特别感谢 jmoore52、mrnoone5313 和 Nirecue 在 [Skywalker Roaster Labs](https://github.com/jmoore52/SkywalkerRoaster) 中完成的优秀工作，本版本正是受他们的项目启发而来。如果你想参与讨论，可以加入 [HiBean Discord 服务器](https://discord.gg/pEM8MkY9)。
 
+## 图片
+
+![图片 1](pic/1.jpeg)
+
+![图片 2](pic/2.PNG)
+
+![图片 3](pic/3.PNG)
+
+![图片 4](pic/4.PNG)
+
+![图片 5](pic/5.PNG)
+
 ## 可用二进制固件（.bin）
 
 每当项目完成一个适合发布的阶段性功能集时，都会生成一个 Release，并自动为受支持的 ESP32 平台构建预编译 `.bin` 固件。
